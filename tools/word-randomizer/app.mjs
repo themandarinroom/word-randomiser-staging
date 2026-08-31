@@ -6,6 +6,7 @@ import { DRAW_MODES, RandomSelectionEngine } from "./random-engine.mjs";
 import { LIVE_MODES } from "./live-session-core.mjs";
 import { FirebaseLiveSessionTransport } from "./firebase-live-transport.mjs";
 import { fitSingleLineText, scheduleSingleLineFit } from "./card-layout.mjs";
+import qrcode from "./vendor/qrcode-generator-2.0.4.mjs";
 
 const $ = (selector) => document.querySelector(selector);
 const escapeKey = (setId, itemId) => `${setId}::${itemId}`;
@@ -13,7 +14,7 @@ const params = new URLSearchParams(location.search);
 const state = {
   sets: [], selectedSetIds: new Set(), selectedItemKeys: new Set(), display: new Set(["image", "chinese", "pinyin"]),
   engine: null, current: null, animating: false, teacherVoiceUrl: "", teacherVoicePromise: Promise.resolve(), audioRequest: 0, voiceAttempt: 0,
-  liveClient: null, liveSnapshot: null, liveGroupId: null, liveUnsubscribe: null, liveHeartbeat: null, liveAuthReady: false
+  liveClient: null, liveSnapshot: null, liveGroupId: null, liveUnsubscribe: null, liveHeartbeat: null, liveAuthReady: false, joinQrValue: "", joinDisplayTrigger: null
 };
 
 function yearLabel(year) { return Number(year) === 0 ? "Prep" : `Year ${year}`; }
@@ -24,6 +25,24 @@ function combinedItems() {
 function selectedItems() { return combinedItems().filter((item) => state.selectedItemKeys.has(item.drawKey)); }
 function isLive() { return Boolean(state.liveClient); }
 function activeLiveGroup() { return state.liveSnapshot?.groups?.[state.liveGroupId] || null; }
+function joinLink(joinCode = state.liveSnapshot?.joinCode || state.liveClient?.credentials.joinCode || "") {
+  const link = new URL("./join.html", location.href); link.searchParams.set("code", joinCode); if (params.get("firebase") === "staging") link.searchParams.set("firebase", "staging"); return link;
+}
+function drawQr(canvas, value, cssSize) {
+  if (!canvas || !value) return;
+  const qr = qrcode(0, "M"); qr.addData(value); qr.make();
+  const quiet = 4; const modules = qr.getModuleCount(); const total = modules + quiet * 2; const ratio = Math.max(1, window.devicePixelRatio || 1); const cell = Math.max(1, Math.floor(cssSize * ratio / total)); const pixels = total * cell;
+  canvas.width = pixels; canvas.height = pixels; canvas.style.width = `${cssSize}px`; canvas.style.height = `${cssSize}px`;
+  const context = canvas.getContext("2d"); context.imageSmoothingEnabled = false; context.fillStyle = "#fff"; context.fillRect(0, 0, pixels, pixels); context.fillStyle = "#102e27";
+  for (let row = 0; row < modules; row += 1) for (let column = 0; column < modules; column += 1) if (qr.isDark(row, column)) context.fillRect((column + quiet) * cell, (row + quiet) * cell, cell, cell);
+}
+function updateJoinQr(joinCode) {
+  if (!joinCode) return; const value = joinLink(joinCode).href; if (value === state.joinQrValue) return; state.joinQrValue = value; drawQr($("#join-qr"), value, 58); drawQr($("#join-qr-large"), value, 340); $("#join-code-large").textContent = joinCode;
+}
+function openJoinDisplay(focus, trigger) {
+  if (!state.joinQrValue) return; state.joinDisplayTrigger = trigger; const card = $("#join-display-card"); card.classList.toggle("focus-code", focus === "code"); card.classList.toggle("focus-qr", focus === "qr"); $("#join-display-modal").hidden = false; document.body.classList.add("join-display-open"); window.requestAnimationFrame(() => $("#close-join-display").focus());
+}
+function closeJoinDisplay() { $("#join-display-modal").hidden = true; document.body.classList.remove("join-display-open"); state.joinDisplayTrigger?.focus?.(); state.joinDisplayTrigger = null; }
 
 function renderSets() {
   $("#set-list").replaceChildren(...state.sets.map((set) => {
@@ -243,7 +262,7 @@ function renderGroupOverview() {
 function renderLiveControls() {
   const snapshot = state.liveSnapshot; if (!snapshot) return; const group = activeLiveGroup();
   $("#live-connection").textContent = snapshot.status === "active" ? "Live · connected" : "Session ended";
-  $("#live-connection").classList.toggle("offline", snapshot.status !== "active"); $("#live-join-code").textContent = snapshot.joinCode;
+  $("#live-connection").classList.toggle("offline", snapshot.status !== "active"); $("#live-join-code").textContent = snapshot.joinCode; updateJoinQr(snapshot.joinCode);
   $("#connected-count").textContent = snapshot.connectedDeviceCount ?? snapshot.devices?.filter((device) => device.connected !== false).length ?? 0;
   $("#toggle-joining").textContent = snapshot.joiningLocked ? "Unlock joining" : "Lock joining"; $("#toggle-joining").disabled = snapshot.status !== "active";
   $("#end-session").disabled = snapshot.status !== "active";
@@ -317,7 +336,13 @@ $("#assign-group").addEventListener("click", async () => { try { await state.liv
 $("#delegate-control").addEventListener("click", async () => { try { await state.liveClient.delegate(state.liveGroupId, $("#live-device-select").value, { draws: 1 }); } catch (error) { showLiveError(error); } });
 $("#revoke-control").addEventListener("click", async () => { try { await state.liveClient.revoke(state.liveGroupId); } catch (error) { showLiveError(error); } });
 $("#toggle-joining").addEventListener("click", async () => { try { await state.liveClient.setJoiningLocked(!state.liveSnapshot.joiningLocked); } catch (error) { showLiveError(error); } });
-$("#copy-join-link").addEventListener("click", async () => { const link = new URL("./join.html", location.href); link.searchParams.set("code", state.liveSnapshot?.joinCode || state.liveClient?.credentials.joinCode || ""); if (params.get("firebase") === "staging") link.searchParams.set("firebase", "staging"); try { await navigator.clipboard.writeText(link.href); $("#live-message").textContent = "Join link copied."; } catch { $("#live-message").textContent = link.href; } });
+$("#copy-join-link").addEventListener("click", async () => { const link = joinLink(); try { await navigator.clipboard.writeText(link.href); $("#live-message").textContent = "Join link copied."; } catch { $("#live-message").textContent = link.href; } });
+$("#show-join-code").addEventListener("click", (event) => openJoinDisplay("code", event.currentTarget));
+$("#show-join-qr").addEventListener("click", (event) => openJoinDisplay("qr", event.currentTarget));
+$("#close-join-display").addEventListener("click", closeJoinDisplay);
+$("#join-display-modal").addEventListener("click", (event) => { if (event.target === $("#join-display-modal")) closeJoinDisplay(); });
+$("#join-display-code").addEventListener("click", async () => { const code = state.liveSnapshot?.joinCode || ""; try { await navigator.clipboard.writeText(code); $("#join-display-code").setAttribute("data-copied", "true"); window.setTimeout(() => $("#join-display-code").removeAttribute("data-copied"), 1200); } catch {} });
+document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#join-display-modal").hidden) closeJoinDisplay(); });
 $("#end-session").addEventListener("click", async () => { if (!confirm("End this live classroom session? Connected student displays will become read-only.")) return; try { await state.liveClient.end(); window.clearInterval(state.liveHeartbeat); } catch (error) { showLiveError(error); } });
 
 async function initialiseLiveAuth() {

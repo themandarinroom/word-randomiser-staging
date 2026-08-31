@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffdf75">
   <title>Word Randomiser · The Mandarin Room</title>
-  <link rel="stylesheet" href="styles.css?v=card-layout-3">
+  <link rel="stylesheet" href="styles.css?v=join-qr-1">
 </head>
 <body>
   <header class="tool-header">
@@ -109,7 +109,8 @@
       <section id="live-session-bar" class="live-session-bar" aria-label="Live classroom session" hidden>
         <div class="live-session-summary">
           <span id="live-connection" class="connection-pill">Connecting…</span>
-          <span>Join code <strong id="live-join-code">—</strong></span>
+          <button id="show-join-code" class="join-code-button" type="button" aria-haspopup="dialog" aria-controls="join-display-modal">Join code <strong id="live-join-code">—</strong></button>
+          <button id="show-join-qr" class="join-qr-button" type="button" aria-label="Enlarge classroom QR code" aria-haspopup="dialog" aria-controls="join-display-modal"><canvas id="join-qr" aria-hidden="true"></canvas></button>
           <button id="copy-join-link" class="compact-button" type="button">Copy join link</button>
           <span><strong id="connected-count">1</strong> connected</span>
           <button id="toggle-joining" class="compact-button" type="button">Lock joining</button>
@@ -125,6 +126,17 @@
         <div id="group-overview" class="group-overview" hidden></div>
         <p id="live-message" class="live-message" role="status"></p>
       </section>
+
+      <div id="join-display-modal" class="join-display-modal" hidden>
+        <section id="join-display-card" class="join-display-card" role="dialog" aria-modal="true" aria-labelledby="join-display-title">
+          <button id="close-join-display" class="join-display-close" type="button" aria-label="Close enlarged join details">×</button>
+          <p class="eyebrow">Live Classroom · 在线课堂</p>
+          <h2 id="join-display-title">Join this class</h2>
+          <div class="join-display-qr"><canvas id="join-qr-large" aria-label="QR code for the student join link"></canvas></div>
+          <button id="join-display-code" class="join-display-code" type="button" aria-label="Copy class code"><span>Class code</span><strong id="join-code-large">—</strong></button>
+          <p>Scan the QR code or enter the five-character class code.</p>
+        </section>
+      </div>
 
       <div class="play-stage">
         <section class="lucky-zone" aria-label="Lucky Draw Box">
@@ -166,6 +178,6 @@
     <span>The Mandarin Room © 2026</span>
     <span>Word Randomiser v0.2 · Aug 2026</span>
   </footer>
-  <script type="module" src="runtime-bootstrap.mjs?v=staging-1"></script>
+  <script type="module" src="runtime-bootstrap.mjs?v=join-qr-1"></script>
 </body>
 </html>
