@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#b9eff7">
   <title>Join Lucky Draw · The Mandarin Room</title>
-  <link rel="stylesheet" href="styles.css?v=card-layout-3">
+  <link rel="stylesheet" href="styles.css?v=student-ui-2">
 </head>
 <body class="student-page">
   <main>
@@ -27,7 +27,13 @@
         <span id="student-draw-number">Draw 0</span>
       </header>
       <section id="student-result-card" class="result-card waiting" aria-live="polite" aria-label="Current vocabulary">
-        <div id="student-waiting" class="waiting-copy"><span aria-hidden="true">✨</span><strong>Waiting for the first draw</strong></div>
+        <div id="student-waiting" class="waiting-copy student-waiting">
+          <div class="waiting-draw-box" aria-hidden="true"><span class="paw-image"></span></div>
+          <p class="waiting-zh" lang="zh-Hans">等待老师开始</p>
+          <strong>Ready for Lucky Draw</strong>
+          <small>You’re connected. The first word will appear here.</small>
+          <span class="waiting-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
         <img id="student-image" alt="" hidden>
         <div class="result-language">
           <div id="student-chinese" class="result-chinese" lang="zh-Hans" hidden></div>
@@ -44,6 +50,6 @@
       <p id="student-session-message" class="student-session-message" role="status">Waiting for the teacher…</p>
     </section>
   </main>
-  <script type="module" src="runtime-bootstrap.mjs?v=staging-1"></script>
+  <script type="module" src="runtime-bootstrap.mjs?v=student-ui-2"></script>
 </body>
 </html>
