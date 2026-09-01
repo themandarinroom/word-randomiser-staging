@@ -357,7 +357,14 @@ async function initialiseLiveAuth() {
   if (state.liveAuthReady) return; state.liveAuthReady = true;
   try {
     const services = await getFirebaseServices();
-    $("#live-sign-in").addEventListener("click", () => services.authSdk.signInWithPopup(services.auth, new services.authSdk.GoogleAuthProvider()).catch((error) => { $("#live-auth-status").textContent = error.message; }));
+    $("#live-sign-in").addEventListener("click", async () => {
+      try {
+        const provider = new services.authSdk.GoogleAuthProvider();
+        const stagingPages = services.app.options.projectId === "the-mandarin-room-staging" && location.hostname === "themandarinroom.github.io";
+        if (stagingPages) await services.authSdk.signInWithRedirect(services.auth, provider);
+        else await services.authSdk.signInWithPopup(services.auth, provider);
+      } catch (error) { $("#live-auth-status").textContent = error.message; }
+    });
     services.authSdk.onAuthStateChanged(services.auth, async (user) => {
       let authorised = false; if (user) { try { const snapshot = await services.firestoreSdk.getDoc(services.firestoreSdk.doc(services.db, "authorizedTeachers", user.uid)); authorised = snapshot.exists() && snapshot.data().active === true; } catch (error) { console.error(error); } }
       $("#live-sign-in").hidden = Boolean(user); $("#live-auth-status").textContent = !user ? "Sign in is required to create a live session." : authorised ? `Ready as ${user.email || user.displayName || "teacher"}.` : "This account is not authorised to create classroom sessions.";
