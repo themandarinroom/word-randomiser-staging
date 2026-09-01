@@ -1,11 +1,10 @@
 import { canUseAiVoice, speakMandarin, playTeacherVoice } from "../../js/audio.js";
-import { cacheSafeAudioUrl, getTeacherVoice } from "../../js/teacher-voice-cloud.js";
 import { FirebaseLiveSessionTransport } from "./firebase-live-transport.mjs";
 import { fitSingleLineText, scheduleSingleLineFit } from "./card-layout.mjs";
 
 const $ = (selector) => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
-const state = { client: null, snapshot: null, pendingSnapshot: null, groupId: null, current: null, teacherVoiceUrl: "", voiceMode: "auto", voiceRequest: 0, drawing: false };
+const state = { client: null, snapshot: null, pendingSnapshot: null, groupId: null, current: null, teacherVoiceUrl: "", teacherVoiceRevision: null, voiceMode: "auto", drawing: false };
 const transport = new FirebaseLiveSessionTransport();
 
 function groupFor(snapshot) {
@@ -21,10 +20,10 @@ function renderCard(item, display, { preview = false } = {}) {
   const count = Number(showImage) + ["chinese", "pinyin", "english"].filter((key) => enabled.has(key)).length; card.className = `result-card content-${Math.max(1, count)}${showImage ? " has-image" : ""}${preview ? " previewing" : ""}`; scheduleSingleLineFit($("#student-chinese")); if (count === 1 && !showImage) { scheduleSingleLineFit($("#student-pinyin"), { minimumSize: 18 }); scheduleSingleLineFit($("#student-english"), { minimumSize: 18 }); } $("#student-voice-actions").hidden = preview;
 }
 
-async function loadTeacherVoice(item) {
-  const request = ++state.voiceRequest; state.teacherVoiceUrl = item?.teacherAudioUrl || ""; $("#student-play-teacher").hidden = !state.teacherVoiceUrl;
-  if (!item?.setId || !item?.id) return;
-  try { const metadata = await getTeacherVoice(item.setId, item.id); if (request !== state.voiceRequest) return; state.teacherVoiceUrl = cacheSafeAudioUrl(metadata) || state.teacherVoiceUrl; $("#student-play-teacher").hidden = !state.teacherVoiceUrl; } catch (error) { console.warn("[Student Teacher Voice]", error); }
+function loadTeacherVoice(item) {
+  state.teacherVoiceUrl = item?.teacherAudioUrl || "";
+  state.teacherVoiceRevision = item?.teacherVoiceRevision ?? null;
+  $("#student-play-teacher").hidden = !state.teacherVoiceUrl;
 }
 
 function render(snapshot) {

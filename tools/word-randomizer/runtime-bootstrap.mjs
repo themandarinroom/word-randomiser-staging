@@ -6,4 +6,4 @@ if (runtime === "staging" || stagingHost) {
   await import("./staging-runtime-config.mjs");
 }
 
-await import(location.pathname.endsWith("/join.html") ? "./student.mjs?v=student-ui-2" : "./app.mjs?v=staging-cache-1");
+await import(location.pathname.endsWith("/join.html") ? "./student.mjs?v=live-snapshot-1" : "./app.mjs?v=firebase-authority-1");

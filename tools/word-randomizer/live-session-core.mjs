@@ -19,7 +19,8 @@ export function normaliseLivePool(items) {
     return {
       drawKey: key, setId: String(item.setId || ""), id: String(item.id || ""),
       chinese: String(item.chinese || ""), pinyin: String(item.pinyin || ""), english: String(item.english || ""),
-      image: String(item.image || ""), teacherAudioUrl: String(item.audio?.teacherAudioUrl || item.teacherAudioUrl || "")
+      image: String(item.image || ""), teacherAudioUrl: String(item.teacherAudioUrl || ""),
+      teacherVoiceRevision: item.teacherVoiceRevision ?? null
     };
   });
 }

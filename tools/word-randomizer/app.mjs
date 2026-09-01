@@ -1,4 +1,4 @@
-import { getSets } from "../../js/vocabulary-store.js?v=staging-cache-1";
+import { getSet, getSets } from "../../js/vocabulary-store.js?v=firebase-authority-1";
 import { canUseAiVoice, speakMandarin, playTeacherVoice } from "../../js/audio.js";
 import { cacheSafeAudioUrl, getTeacherVoice } from "../../js/teacher-voice-cloud.js";
 import { getFirebaseServices } from "../../js/firebase.js";
@@ -13,7 +13,7 @@ const escapeKey = (setId, itemId) => `${setId}::${itemId}`;
 const params = new URLSearchParams(location.search);
 const state = {
   sets: [], selectedSetIds: new Set(), selectedItemKeys: new Set(), display: new Set(["image", "chinese", "pinyin"]),
-  engine: null, current: null, animating: false, teacherVoiceUrl: "", teacherVoicePromise: Promise.resolve(), audioRequest: 0, voiceAttempt: 0,
+  engine: null, current: null, animating: false, teacherVoiceUrl: "", teacherVoiceRevision: null, teacherVoicePromise: Promise.resolve(), audioRequest: 0, voiceAttempt: 0,
   liveClient: null, liveSnapshot: null, liveGroupId: null, liveUnsubscribe: null, liveHeartbeat: null, liveAuthReady: false, joinQrValue: "", joinDisplayTrigger: null
 };
 
@@ -153,12 +153,20 @@ function updatePoolStatus() {
 }
 
 async function loadTeacherVoice(item, request) {
-  state.teacherVoiceUrl = item.audio?.teacherAudioUrl || item.teacherAudioUrl || "";
-  $("#play-teacher").hidden = !state.teacherVoiceUrl;
+  state.teacherVoiceUrl = "";
+  state.teacherVoiceRevision = null;
+  if (isLive()) {
+    state.teacherVoiceUrl = item.teacherAudioUrl || "";
+    state.teacherVoiceRevision = item.teacherVoiceRevision ?? null;
+    $("#play-teacher").hidden = !state.teacherVoiceUrl;
+    return;
+  }
+  $("#play-teacher").hidden = true;
   try {
     const metadata = await getTeacherVoice(item.setId, item.id);
     if (request !== state.audioRequest) return;
-    state.teacherVoiceUrl = cacheSafeAudioUrl(metadata) || state.teacherVoiceUrl;
+    state.teacherVoiceUrl = cacheSafeAudioUrl(metadata);
+    state.teacherVoiceRevision = metadata?.revision ?? null;
     $("#play-teacher").hidden = !state.teacherVoiceUrl;
   } catch (error) { console.warn("[Word Randomiser Teacher Voice]", error); }
 }
@@ -228,14 +236,14 @@ function draw() {
 }
 
 function clearCard() {
-  state.current = null; state.audioRequest += 1; state.voiceAttempt += 1; state.teacherVoiceUrl = ""; state.teacherVoicePromise = Promise.resolve();
+  state.current = null; state.audioRequest += 1; state.voiceAttempt += 1; state.teacherVoiceUrl = ""; state.teacherVoiceRevision = null; state.teacherVoicePromise = Promise.resolve();
   $("#result-card").className = "result-card waiting"; $("#waiting-copy").hidden = false;
   ["#result-image", "#result-chinese", "#result-pinyin", "#result-english", "#voice-actions"].forEach((selector) => { $(selector).hidden = true; });
   $("#audio-status").textContent = "";
 }
 
 function resetPlayState() {
-  state.engine.reset(); state.current = null; state.audioRequest += 1; state.voiceAttempt += 1; state.teacherVoiceUrl = ""; state.teacherVoicePromise = Promise.resolve();
+  state.engine.reset(); state.current = null; state.audioRequest += 1; state.voiceAttempt += 1; state.teacherVoiceUrl = ""; state.teacherVoiceRevision = null; state.teacherVoicePromise = Promise.resolve();
   clearCard(); $("#complete-dialog").hidden = true; $("#draw").disabled = false;
   renderHistory(); updatePoolStatus();
 }
@@ -359,9 +367,17 @@ async function initialiseLiveAuth() {
 $("#classroom-mode").addEventListener("focus", initialiseLiveAuth, { once: true });
 
 try {
-  state.sets = (await getSets()).sort((a, b) => Number(a.yearLevel) - Number(b.yearLevel) || a.title.localeCompare(b.title));
-  $("#library-status").textContent = `${state.sets.length} live sets`;
   const requested = params.get("set");
+  const sets = await getSets();
+  if (requested) {
+    const selectedSet = await getSet(requested);
+    const existingIndex = sets.findIndex((entry) => entry.id === requested);
+    if (selectedSet && existingIndex >= 0) sets[existingIndex] = selectedSet;
+    else if (selectedSet) sets.push(selectedSet);
+    else if (existingIndex >= 0) sets.splice(existingIndex, 1);
+  }
+  state.sets = sets.sort((a, b) => Number(a.yearLevel) - Number(b.yearLevel) || a.title.localeCompare(b.title));
+  $("#library-status").textContent = `${state.sets.length} live sets`;
   if (requested) { const set = state.sets.find((entry) => entry.id === requested); if (set) toggleSet(set, true); }
   renderSets(); renderWords();
 } catch (error) {
