@@ -22,6 +22,14 @@ const cachePolicy = resolveVocabularyCachePolicy();
 const STORAGE_KEY = cachePolicy.storageKey;
 
 function publicSet(data) {
+  const items = (Array.isArray(data.items) ? data.items : []).map((item) => {
+    const cleanItem = { ...item };
+    if (cleanItem.audio && typeof cleanItem.audio === "object") {
+      cleanItem.audio = { ...cleanItem.audio };
+      delete cleanItem.audio.teacherAudioUrl;
+    }
+    return cleanItem;
+  });
   return clone({
     id: data.id,
     yearLevel: data.yearLevel,
@@ -31,7 +39,7 @@ function publicSet(data) {
     coverImage: data.coverImage || null,
     coverImageStoragePath: data.coverImageStoragePath || null,
     coverImageGenerated: data.coverImageGenerated === true,
-    items: Array.isArray(data.items) ? data.items : []
+    items
   });
 }
 
