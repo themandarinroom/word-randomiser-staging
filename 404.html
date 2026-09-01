@@ -1,5 +1,44 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#ffdf75"><title>Word Randomiser Staging · The Mandarin Room</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f5e8;color:#173c34;font:18px system-ui,sans-serif}main{text-align:center;padding:32px}a{display:inline-block;padding:16px 24px;border-radius:16px;background:#187363;color:#fff;font-weight:800;text-decoration:none}</style></head>
-<body><main><h1>Word Randomiser v0.2</h1><p>The Mandarin Room · GitHub Pages staging</p><a href="./tools/word-randomizer/?set=year1-pets&amp;firebase=staging">Open Word Randomiser</a></main></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f3e9">
+  <title>Vocabulary Library · The Mandarin Room</title>
+  <link rel="stylesheet" href="css/styles.css?v=duplicate-sets-1">
+</head>
+<body>
+  <header class="site-header editor-site-header">
+    <a class="brand" href="./" aria-label="Vocabulary Library home">
+      <span class="brand-mark" aria-hidden="true">中文</span>
+      <span><strong>The Mandarin Room</strong><small>Vocabulary Library</small></span>
+    </a>
+    <a class="button primary" href="tools/word-randomizer/">Open Word Randomiser</a>
+    <section class="voice-auth-panel home-auth-panel" aria-label="Teacher account">
+      <strong id="voice-auth-state">Connecting…</strong>
+      <div>
+        <button id="voice-sign-in" class="button secondary" type="button">Teacher Sign in</button>
+        <button id="voice-sign-out" class="button secondary" type="button" hidden>Sign out</button>
+      </div>
+    </section>
+  </header>
+
+  <main id="app" tabindex="-1">
+    <section aria-label="Vocabulary sets">
+      <div class="library-controls">
+        <nav id="year-filters" class="filter-row" aria-label="Filter by year level"></nav>
+        <p id="set-summary" class="muted"></p>
+        <a id="new-set" class="button primary" href="editor.html" hidden>+ New set</a>
+      </div>
+      <div id="set-grid" class="set-grid" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>App created by Wei Wang</span>
+    <span>The Mandarin Room © 2026</span>
+    <span>Vocabulary v0.4.2 · Aug 2026</span>
+  </footer>
+  <script type="module" src="js/app.js?v=duplicate-sets-1"></script>
+</body>
+</html>
