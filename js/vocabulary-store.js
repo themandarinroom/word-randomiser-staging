@@ -1,14 +1,30 @@
 import { vocabularySets } from "./vocabulary-data.js";
 import { getFirebaseServices } from "./firebase.js";
 
-const STORAGE_KEY = "mandarin-room-vocabulary-v2";
 const COLLECTION = "vocabularySets";
 const clone = (value) => JSON.parse(JSON.stringify(value));
+
+export function resolveVocabularyCachePolicy(runtimeLocation = typeof location === "undefined" ? null : location) {
+  const search = String(runtimeLocation?.search || "");
+  const hostname = String(runtimeLocation?.hostname || "").toLowerCase();
+  const staging = new URLSearchParams(search).get("firebase") === "staging" ||
+    hostname === "the-mandarin-room-staging.web.app" ||
+    hostname === "the-mandarin-room-staging.firebaseapp.com";
+  return Object.freeze({
+    staging,
+    storageKey: staging ? "mandarin-room-vocabulary-staging-v1" : "mandarin-room-vocabulary-v2",
+    useBundledFallback: !staging
+  });
+}
+
+const cachePolicy = resolveVocabularyCachePolicy();
+const STORAGE_KEY = cachePolicy.storageKey;
+const defaultLocalSets = () => cachePolicy.useBundledFallback ? clone(vocabularySets) : [];
 
 function localSets() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!Array.isArray(saved)) return clone(vocabularySets);
+    if (!Array.isArray(saved)) return defaultLocalSets();
     let changed = false;
     const cleaned = saved.map((set) => ({ ...set, items: set.items.map((item) => {
       if (item.alignment === undefined && item.segments === undefined) return item;
@@ -21,7 +37,7 @@ function localSets() {
     if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
     return cleaned;
   } catch (_) {
-    return clone(vocabularySets);
+    return defaultLocalSets();
   }
 }
 

@@ -1,4 +1,4 @@
-import { getSets } from "../../js/vocabulary-store.js?v=cloud-sync-1";
+import { getSets } from "../../js/vocabulary-store.js?v=staging-cache-1";
 import { canUseAiVoice, speakMandarin, playTeacherVoice } from "../../js/audio.js";
 import { cacheSafeAudioUrl, getTeacherVoice } from "../../js/teacher-voice-cloud.js";
 import { getFirebaseServices } from "../../js/firebase.js";
